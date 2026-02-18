@@ -21,7 +21,7 @@ Apply the "Family Values" design philosophy to every UI you build. Enforces thre
 ## Installation
 
 ```bash
-npx skills add <your-github-username>/family-taste
+npx skills add cristicretu/family-taste-skill
 ```
 
 ## Usage
@@ -46,6 +46,12 @@ skills/
 └── design-with-taste/
     └── SKILL.md
 ```
+
+## Credits
+
+The design philosophy in this skill is entirely the work of **[Benji Taylor](https://benji.org)**, documented in his essay [Family Values](https://benji.org/family-values). The three pillars — Simplicity, Fluidity, and Delight — were developed while building [Family](https://family.co), a self-custody crypto wallet for iOS.
+
+This skill is a structured reformatting of his ideas to make them actionable for AI coding agents. All credit belongs to Benji and the Family team.
 
 ## License
 

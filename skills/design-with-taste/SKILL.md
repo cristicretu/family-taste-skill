@@ -70,13 +70,18 @@ Ordered by priority. You cannot have Delight without Fluidity, and you cannot ha
 - **No instant show/hide.** Every element that appears or disappears must animate. Pick a transition that makes spatial sense — fade, slide, scale, morph.
 - **Shared element transitions.** If an element exists in both State A and State B (a card that expands, a button that becomes a sheet), it must visually *travel* between them. Never unmount and remount — morph.
 - **Directional consistency.** Navigate right (next step, next tab) → content enters from right. Go back → content enters from left. Tabs to the left of current slide left. This builds spatial memory.
-- **Text morphing over instant replacement.** When button labels change (e.g., "Continue" → "Confirm"), animate the transition. Identify shared letter sequences ("Con") — keep them fixed while the rest morphs. Crossfade is the minimum; shared-letter morphing is the ideal.
+- **Text morphing over instant replacement.** When button labels change (e.g., "Continue" → "Confirm"), animate the transition. Identify shared letter sequences ("Con") — keep them fixed while the rest morphs. Use [torph](https://torph.lochie.me/) (`npm i torph`) — dependency-free, works with React/Vue/Svelte. Crossfade is the minimum fallback; shared-letter morphing is the ideal.
 - **Partial text changes: only animate what changes.** If a sentence gains or loses a word, keep the unchanged portion static. Animating unchanged text creates jarring redundancy.
 - **Persistent elements stay put.** If a header, card, or component persists across a transition, it must NOT animate out and back in. Only the changing parts move.
 - **Loading states travel to their destination.** A spinner doesn't just sit where triggered — it moves to where the user will look for results (e.g., after submitting a transaction, the spinner migrates to the activity tab icon).
 - **Micro-directional cues.** Chevrons, arrows, and carets should animate to reflect the action taken. A `→` becomes a `←` on back-navigation. An accordion chevron rotates on expand.
+- **Unified interpolation.** All visual elements driven by the same data should share the same lerp/easing. This makes the interface feel like *one thing breathing* rather than a bunch of parts updating independently. When the value changes, the line, the label, the axis, and the badge should all move as one.
 
 ```jsx
+// Text morphing — use torph
+import { TextMorph } from 'torph/react';
+<TextMorph>{label}</TextMorph>  // handles shared-letter animation automatically
+
 // Directional tab transitions
 const direction = newIndex > currentIndex ? 1 : -1;
 <motion.div
@@ -89,21 +94,10 @@ const direction = newIndex > currentIndex ? 1 : -1;
 
 // Shared element: card → detail view
 <motion.div
-  layoutId={`card-${id}`}  // Framer Motion layout animation
+  layoutId={`card-${id}`}
   className={isExpanded ? "fixed inset-0 rounded-none" : "rounded-xl"}
   transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
 />
-
-// Text morph: shared prefix stays fixed, suffixes crossfade
-<span>Con</span>
-<AnimatePresence mode="wait">
-  <motion.span key={label}
-    initial={{ opacity: 0, y: 4 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -4 }}
-    transition={{ duration: 0.15 }}
-  >{label === "continue" ? "tinue" : "firm"}</motion.span>
-</AnimatePresence>
 ```
 
 **The golden easing curve**: `cubic-bezier(0.16, 1, 0.3, 1)` — fast start, gentle settle. Default for all entrances and morphs. Use `ease-in` (`cubic-bezier(0.4, 0, 1, 1)`) for exits only. Never use linear.
@@ -137,7 +131,7 @@ Delight ↑
 - **Easter eggs reward exploration.** Hide moments in unexpected places. They create stories users share. Key: place them in features used just enough that discovery feels like reward, not annoyance.
 - **Celebrate completions.** Significant actions (backup, onboarding, first transaction) deserve confetti, a custom animation, a satisfying sound — not a green checkmark.
 - **Make destructive actions satisfying.** Deleting items? They tumble into a trash can with a sound effect. Destructive ≠ unpleasant.
-- **Animate numbers.** Values that change (prices, counts, balances) should count/flip/morph. Commas should shift position smoothly as numbers grow — never just swap.
+- **Animate numbers and live charts.** Values that change (prices, counts, balances) should count/flip/morph. Commas should shift position smoothly as numbers grow — never just swap. For real-time line charts, use [liveline](https://benji.org/liveline) (`npm i liveline`) — one canvas, no dependencies beyond React 18, 60fps interpolation. For 60fps value overlays, update the DOM directly rather than through React state to avoid re-render overhead.
 - **Empty states are first impressions.** An animated arrow pointing toward the create button, a floating illustration, a warm message. Never "No items yet" with nothing else.
 - **Sound design amplifies physicality.** Completion sounds, subtle interaction feedback. Sound reinforces reward and makes actions feel real.
 - **Drag-and-drop should feel satisfying.** Stacking animations, smooth reorder, visual feedback on lift. Reordering items should feel better than the result deserves.
@@ -161,6 +155,18 @@ function AnimatedNumber({ value }) {
   const spring = useSpring(value, { stiffness: 80, damping: 20 });
   return <motion.span>{useTransform(spring, v => Math.round(v).toLocaleString())}</motion.span>;
 }
+
+// Real-time chart — liveline handles interpolation, momentum arrows, scrub, theming
+import { Liveline } from 'liveline';
+<div style={{ height: 200 }}>
+  <Liveline
+    data={history}           // [{ time, value }]
+    value={latestValue}      // current number
+    momentum                 // directional arrows (green/red/grey)
+    showValue                // 60fps DOM overlay, no re-renders
+    color="#3b82f6"          // derives full palette from one color
+  />
+</div>
 
 // Satisfying empty state
 function EmptyState() {
@@ -212,10 +218,11 @@ Run before considering any UI "done":
 - [ ] Shared elements morph between states (not unmount/remount)
 - [ ] Directional transitions match spatial logic
 - [ ] Persistent elements don't redundantly animate
-- [ ] Text changes are animated (shared-letter morph or crossfade minimum)
+- [ ] Text changes use torph or crossfade minimum
 - [ ] Only the changing part of partial text updates animates
 - [ ] Loading states move to where results will appear
 - [ ] Micro-directional cues on chevrons and arrows
+- [ ] Elements driven by same data share the same lerp/easing (unified interpolation)
 - [ ] Default easing is `cubic-bezier(0.16, 1, 0.3, 1)`
 
 ### Delight
@@ -268,6 +275,19 @@ Run before considering any UI "done":
 | Number counting | ease-out cubic | 400–800ms |
 | Page transition | `cubic-bezier(0.16, 1, 0.3, 1)` | 300ms |
 | Stagger between items | — | 30–60ms per item |
+
+---
+
+## Recommended Tools
+
+These libraries are built by the same people behind Family and embody the same philosophy:
+
+| Library | Purpose | Install |
+|---|---|---|
+| [torph](https://torph.lochie.me/) | Dependency-free text morphing. Handles shared-letter transitions automatically. React, Vue, Svelte. | `npm i torph` |
+| [liveline](https://benji.org/liveline) | Real-time animated line charts. One canvas, 60fps lerp, momentum arrows, no dependencies beyond React 18. | `npm i liveline` |
+
+When building anything with text that changes or live numeric/chart data, reach for these before rolling your own.
 
 ---
 
